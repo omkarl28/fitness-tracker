@@ -31,7 +31,7 @@ conn.commit()
 
 # Sidebar navigation
 st.sidebar.title("GetFit App")
-page = st.sidebar.radio("Go to", ["Home", "Daily Input", "Nutrition", "Grocery List"])
+page = st.sidebar.radio("Go to", ["Home", "Daily Input", "Nutrition", "Grocery List","Workout"])
 
 def calculate_bmi(weight, height_cm):
     if not weight or not height_cm:
@@ -221,3 +221,64 @@ elif page == "Grocery List":
 
     st.markdown("#### Copy this prompt and paste it into ChatGPT:")
     st.code(prompt, language="markdown")
+elif page == "Workout Plan":
+    st.title("Personalized Workout Plan")
+    user = st.selectbox("Select User", ["Omkar", "Prutha"], key="workout_user")
+
+    if user == "Omkar":
+        st.subheader("Workout Plan for Omkar")
+        st.warning("Post-vitrectomy with oil removal — avoid lifting more than 5 kg.")
+
+        st.markdown("""
+        **Focus Areas:**  
+        - Light mobility  
+        - Gentle walking  
+        - Breathing exercises  
+        - No strength or core-heavy training until medically cleared  
+
+        **Weekly Routine (Example):**
+        | Day       | Activity                     |
+        |-----------|------------------------------|
+        | Monday    | 20-min slow walk + stretching |
+        | Tuesday   | Breathing + neck/shoulder rolls |
+        | Wednesday | 20-min walk + deep breathing |
+        | Thursday  | Rest or short walk            |
+        | Friday    | Breathing + light yoga       |
+        | Saturday  | 25-min walk                  |
+        | Sunday    | Rest                         |
+
+        **Tips:**
+        - Avoid jerky head movements.
+        - Wear sunglasses if light sensitive.
+        - Follow doctor's post-op instructions always.
+        """)
+
+    elif user == "Prutha":
+        st.subheader("Workout Plan for Prutha")
+        st.info("Diabetes management — focus on consistency and moderate cardio.")
+
+        st.markdown("""
+        **Focus Areas:**  
+        - Moderate-intensity cardio (walking, cycling)  
+        - Resistance training (bodyweight, light dumbbells)  
+        - Flexibility and relaxation  
+
+        **Weekly Routine (Example):**
+        | Day       | Activity                               |
+        |-----------|----------------------------------------|
+        | Monday    | 30-min brisk walk + stretching         |
+        | Tuesday   | Light resistance workout (15-20 min)   |
+        | Wednesday | Yoga (focus on flexibility & breath)   |
+        | Thursday  | Rest / Walk after dinner (15-20 min)   |
+        | Friday    | 30-min cycling or walking              |
+        | Saturday  | Resistance + yoga combo (30 min)       |
+        | Sunday    | Walk + breathing exercises             |
+
+        **Tips:**
+        - Monitor blood sugar before & after workouts.
+        - Stay hydrated.
+        - Eat a small snack if blood sugar drops.
+        """)
+
+    st.markdown("---")
+    st.caption("Note: Always consult a medical professional before starting or modifying your workout routine.")
