@@ -221,7 +221,7 @@ elif page == "Grocery List":
 
     st.markdown("#### Copy this prompt and paste it into ChatGPT:")
     st.code(prompt, language="markdown")
-elif page == "Workout Plan":
+elif page == "Workout":
     st.title("Personalized Workout Plan")
     user = st.selectbox("Select User", ["Omkar", "Prutha"], key="workout_user")
 
