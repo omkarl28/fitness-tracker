@@ -76,11 +76,11 @@ if page == "Home":
             if not df_prutha.empty:
                     prutha_weight = df_prutha["weight"].iloc[-1]
                     prutha_bmi = calculate_bmi(prutha_weight, users["Prutha"]["height_cm"])
-                    st.metric(f"Prutha's Weight (Target: {target_weight})", f"{prutha_weight:.1f} kg", delta=f"{prutha_weight - target_weight:.1f} kg Remaining Weightloss")
+                    st.metric(f"Prutha's Weight (Target: {target_weight})", f"{prutha_weight:.1f} kg", delta=f"{prutha_weight - target_weight:.1f} kg Remaining Weightloss",delta_color='inverse')
                     weight_loss_percent = ((start_weight - prutha_weight) / (start_weight - target_weight)) * 100
                     st.write(f"**Weight Loss Progress:** {weight_loss_percent:.2f}%")
                     
-                    st.metric("Prutha's BMI", f"{prutha_bmi:.2f}", delta=f"{prutha_bmi - target_bmi:.2f} BMI Remaining BMI Reduction")
+                    st.metric("Prutha's BMI", f"{prutha_bmi:.2f}", delta=f"{prutha_bmi - target_bmi:.2f} BMI Remaining BMI Reduction",delta_color='inverse')
             workout_done = df_prutha["workout_done"].iloc[-1] if not df_prutha.empty else 0
             diet_done = df_prutha["diet_done"].iloc[-1] if not df_prutha.empty else 0
             slept_7h = df_prutha["slept_7h"].iloc[-1] if not df_prutha.empty else 0
@@ -101,11 +101,11 @@ if page == "Home":
             if not df_omkar.empty:
                 omkar_weight = df_omkar["weight"].iloc[-1]
                 omkar_bmi = calculate_bmi(omkar_weight, users["Omkar"]["height_cm"])
-                st.metric(f"Omkar's Weight (Target: {target_weight})", f"{omkar_weight:.1f} kg", delta=f"{omkar_weight - target_weight:.1f} kg Remaining Weightloss")
+                st.metric(f"Omkar's Weight (Target: {target_weight})", f"{omkar_weight:.1f} kg", delta=f"{omkar_weight - target_weight:.1f} kg Remaining Weightloss",delta_color='inverse')
                 weight_loss_percent = ((start_weight - omkar_weight) / (start_weight - target_weight)) * 100
                 st.write(f"**Weight Loss Progress:** {weight_loss_percent:.2f}%")
                 
-                st.metric("Omkar's BMI", f"{omkar_bmi:.2f}", delta=f"{omkar_bmi - target_bmi:.2f} BMI Remaining BMI Reduction")
+                st.metric("Omkar's BMI", f"{omkar_bmi:.2f}", delta=f"{omkar_bmi - target_bmi:.2f} BMI Remaining BMI Reduction",delta_color='inverse')
                 diet_done = df_omkar["diet_done"].iloc[-1] if not df_omkar.empty else 0
                 slept_7h = df_omkar["slept_7h"].iloc[-1] if not df_omkar.empty else 0
                 drank_water = df_omkar["drank_water"].iloc[-1] if not df_omkar.empty else 0
