@@ -41,91 +41,91 @@ def calculate_bmi(weight, height_cm):
     return round(weight / (height_m ** 2), 2)
 
 if page == "Home":
-    st.title("Home")
-    st.header("Progress Overview")
+    
+   
 
     df = pd.read_sql("SELECT * FROM daily_input", conn)
     if not df.empty:
-        df["date"] = pd.to_datetime(df["date"])
-
-        # Targets and first weights
-        targets = {"Omkar": 75, "Prutha": 68}
-        first_weights = {"Omkar": 90.06, "Prutha": 93.6}
-
-        # --- Summary Section ---
-        summary_cols = st.columns(len(users))
-        for idx, user in enumerate(users.keys()):
-            user_df = df[df["user"] == user]
-            if not user_df.empty:
-                workouts_done = int(user_df["workout_done"].sum())
-                latest_weight = user_df.sort_values("date")["weight"].iloc[-1]
-                first_weight = first_weights[user]
-                target_weight = targets[user]
-                planned_loss = first_weight - target_weight
-                loss_so_far = first_weight - latest_weight
-                percent_achieved = (
-                    min(100, round(100 * loss_so_far / planned_loss, 1)) if planned_loss > 0 else 0
-                )
-
-                with summary_cols[idx]:
-                    st.markdown(f"### {user}")
-                    st.metric("Workouts Done", f"{workouts_done}")
-                    st.metric("Weight Goal Achieved", f"{percent_achieved}%")
-            else:
-                with summary_cols[idx]:
-                    st.markdown(f"### {user}")
-                    st.info("No data.")
-
-              # --- Separate Weight Line Charts for Omkar and Prutha ---
-        st.subheader("Weight Progress (kg)")
-
-        min_date = df["date"].min()
+        st.subheader("90-Day Challenge Progress")
+        challenge_days = 90
+        challenge_start = pd.to_datetime(df["date"].min())
+        challenge_end = challenge_start + pd.Timedelta(days=challenge_days-1)
         today = pd.to_datetime(datetime.date.today())
-        all_dates = pd.date_range(start=min_date, end=today, freq="D")
-        date_strs = [d.strftime("%Y-%m-%d") for d in all_dates]
-        col1,col2= st.columns(2)
-        for user in users.keys():
-            user_df = (
-                df[df["user"] == user][["date", "weight"]]
-                .sort_values("date")
-                .groupby("date")
-                .last()
-            )
-            user_df.index = user_df.index.strftime("%Y-%m-%d")
-            # Insert first weight at the first date if not present
-            if date_strs[0] not in user_df.index:
-                user_df.loc[date_strs[0]] = first_weights[user]
-            user_df = user_df.sort_index()
-            # Reindex to all dates and forward fill
-            user_df = user_df.reindex(date_strs, method='ffill')
-            user_df["weight"].fillna(first_weights[user], inplace=True)
-            chart_df = pd.DataFrame({
-                "Date": date_strs,
-                "Weight": user_df["weight"].values
-            })
-            with col1 if user == "Omkar" else col2:
-                st.subheader(f"{user}'s Weight Chart")
-                st.write("Click on the chart to zoom in.")  
-                fig = px.line(
-                    chart_df,
-                    x="Date",
-                    y="Weight",
-                    markers=True,
-                    title=f"{user}'s Weight Progress"
-                )
-                fig.update_traces(
-                    text=[f"{w:.1f}" for w in chart_df["Weight"]],
-                    textposition="top right",
-                    mode="lines+markers+text"
-                )
-                fig.update_layout(
-                    xaxis_title="Date",
-                    yaxis_title="Weight (kg)",
-                    showlegend=False,
-                    height=350
-                )
-                st.plotly_chart(fig, use_container_width=True)
-            
+        days_remaining = max(0, (challenge_end - today).days + 1)
+        total_days = (challenge_end - challenge_start).days + 1
+        days_passed = (today - challenge_start).days + 1
+        progress = min(max(days_passed / total_days, 0), 1)
+
+        # Progress bar with labels
+        st.markdown(
+            f"<div style='display: flex; justify-content: space-between;'>"
+            f"<span>Start: <b>{challenge_start.strftime('%Y-%m-%d')}</b></span>"
+            f"<span>End: <b>{challenge_end.strftime('%Y-%m-%d')}</b></span>"
+            f"</div>",
+            unsafe_allow_html=True
+        )
+        st.progress(progress)
+        st.write(f"**Days Remaining:** {days_remaining}")
+        col1, col2 = st.columns(2)
+        with col1:
+            start_weight=94.6
+            df_prutha = pd.read_sql("SELECT * FROM daily_input where user='Prutha'", conn)
+            target_weight = 82.0  # Example target weight for Prutha
+            height=167.64  # Example height for Prutha in cm
+            target_bmi =  round(target_weight / ((height / 100) ** 2), 2)
+            if not df_prutha.empty:
+                    prutha_weight = df_prutha["weight"].iloc[-1]
+                    prutha_bmi = calculate_bmi(prutha_weight, users["Prutha"]["height_cm"])
+                    st.metric(f"Prutha's Weight (Target: {target_weight})", f"{prutha_weight:.1f} kg", delta=f"{prutha_weight - target_weight:.1f} kg Remaining Weightloss")
+                    weight_loss_percent = ((start_weight - prutha_weight) / (start_weight - target_weight)) * 100
+                    st.write(f"**Weight Loss Progress:** {weight_loss_percent:.2f}%")
+                    
+                    st.metric("Prutha's BMI", f"{prutha_bmi:.2f}", delta=f"{prutha_bmi - target_bmi:.2f} BMI Remaining BMI Reduction")
+                    
+
+                    
+        with col2:
+            start_weight=90.6
+            df_omkar = pd.read_sql("SELECT * FROM daily_input where user='Omkar'", conn)
+            target_weight = 80.0
+            height=180.8  # Example height for Omkar in cm
+            target_bmi =  round(target_weight / ((height / 100) ** 2), 2)
+            if not df_omkar.empty:
+                omkar_weight = df_omkar["weight"].iloc[-1]
+                omkar_bmi = calculate_bmi(omkar_weight, users["Omkar"]["height_cm"])
+                st.metric(f"Omkar's Weight (Target: {target_weight})", f"{omkar_weight:.1f} kg", delta=f"{omkar_weight - target_weight:.1f} kg Remaining Weightloss")
+                weight_loss_percent = ((start_weight - omkar_weight) / (start_weight - target_weight)) * 100
+                st.write(f"**Weight Loss Progress:** {weight_loss_percent:.2f}%")
+                
+                st.metric("Omkar's BMI", f"{omkar_bmi:.2f}", delta=f"{omkar_bmi - target_bmi:.2f} BMI Remaining BMI Reduction")
+        # Aggregate to ensure one weight per user per date (take last entry if duplicates)
+        df_plot = (
+            df.sort_values("date")
+            .groupby(["user", "date"], as_index=False)
+            .last()
+        )
+
+        # Add a text column for labels
+        df_plot["weight_label"] = df_plot["weight"].round(1).astype(str)
+
+        fig = px.line(
+            df_plot,
+            x="date",
+            y="weight",
+            color="user",
+            title="Weight Progress Over Time",
+            markers=True,
+            text="weight_label"
+        )
+        fig.update_traces(textposition="top center")
+        fig.update_layout(
+            xaxis_title="Date",
+            yaxis_title="Weight (kg)",
+            legend_title="User",
+            xaxis=dict(tickformat="%Y-%m-%d"),
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
 # ...existing code...
 
 elif page == "Daily Input":
