@@ -51,6 +51,7 @@ if page == "Home":
         targets = {"Omkar": 75, "Prutha": 68}
         first_weights = {"Omkar": 90.06, "Prutha": 93.6}
 
+        # --- Summary Section ---
         summary_cols = st.columns(len(users))
         for idx, user in enumerate(users.keys()):
             user_df = df[df["user"] == user]
@@ -74,12 +75,38 @@ if page == "Home":
                     st.markdown(f"### {user}")
                     st.info("No data.")
 
-        # Only one line chart for weight
+       # ...existing code...
+        # --- Weight Line Chart with Forward Fill and First Weight ---
         st.subheader("Weight Progress (kg)")
-        weight_df = df.pivot_table(index="date", columns="user", values="weight")
-        st.line_chart(weight_df, use_container_width=True)
-    else:
-        st.info("No data available. Please add daily input.")
+
+        # Create a date range from the earliest entry to today
+        min_date = df["date"].min()
+        today = pd.to_datetime(datetime.date.today())
+        all_dates = pd.date_range(start=min_date, end=today, freq="D")
+        date_strs = [d.strftime("%Y-%m-%d") for d in all_dates]
+
+        weight_chart_df = pd.DataFrame(index=date_strs)
+
+        for user in users.keys():
+            user_df = (
+                df[df["user"] == user][["date", "weight"]]
+                .sort_values("date")
+                .groupby("date")
+                .last()
+            )
+            user_df.index = user_df.index.strftime("%Y-%m-%d")
+            # Insert first weight at the first date if not present
+            if date_strs[0] not in user_df.index:
+                user_df.loc[date_strs[0]] = first_weights[user]
+            user_df = user_df.sort_index()
+            # Reindex to all dates and forward fill
+            user_df = user_df.reindex(date_strs, method='ffill')
+            # If still NaN (no data at all), fill with first_weight
+            user_df["weight"].fillna(first_weights[user], inplace=True)
+            weight_chart_df[user] = user_df["weight"]
+
+        st.line_chart(weight_chart_df, use_container_width=True)
+# ...existing code...
 
 elif page == "Daily Input":
     st.title("Daily Input")
