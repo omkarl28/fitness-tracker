@@ -46,52 +46,38 @@ if page == "Home":
     df = pd.read_sql("SELECT * FROM daily_input", conn)
     if not df.empty:
         df["date"] = pd.to_datetime(df["date"])
-        total_days = (df["date"].max() - df["date"].min()).days + 1
 
-        st.subheader("Summary")
+        # Targets and first weights
+        targets = {"Omkar": 75, "Prutha": 68}
+        first_weights = {"Omkar": 90.06, "Prutha": 93.6}
+
         summary_cols = st.columns(len(users))
         for idx, user in enumerate(users.keys()):
             user_df = df[df["user"] == user]
             if not user_df.empty:
-                workouts_done = user_df["workout_done"].sum()
-                diet_followed = user_df["diet_done"].sum()
-                water_drank = user_df["drank_water"].sum()
-                slept_well = user_df["slept_7h"].sum()
-                days_recorded = user_df["date"].nunique()
+                workouts_done = int(user_df["workout_done"].sum())
+                latest_weight = user_df.sort_values("date")["weight"].iloc[-1]
+                first_weight = first_weights[user]
+                target_weight = targets[user]
+                planned_loss = first_weight - target_weight
+                loss_so_far = first_weight - latest_weight
+                percent_achieved = (
+                    min(100, round(100 * loss_so_far / planned_loss, 1)) if planned_loss > 0 else 0
+                )
 
                 with summary_cols[idx]:
                     st.markdown(f"### {user}")
-                    st.metric("Workouts Done", f"{workouts_done} / {total_days}")
-                    st.metric("Diet Followed", f"{diet_followed} / {total_days}")
-                    st.metric("Water Drank", f"{water_drank} / {total_days}")
-                    st.metric("Slept Well", f"{slept_well} / {total_days}")
+                    st.metric("Workouts Done", f"{workouts_done}")
+                    st.metric("Weight Goal Achieved", f"{percent_achieved}%")
             else:
                 with summary_cols[idx]:
                     st.markdown(f"### {user}")
                     st.info("No data.")
 
-        # ...existing chart code...
-        for user in users.keys():
-            st.subheader(user)
-            user_df = df[df["user"] == user].sort_values("date")
-            if not user_df.empty:
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.markdown("**Weight (kg)**")
-                    st.bar_chart(user_df.set_index("date")["weight"])
-                with col2:
-                    st.markdown("**BMI**")
-                    user_df["bmi"] = user_df.apply(lambda row: calculate_bmi(row["weight"], users[user]["height_cm"]), axis=1)
-                    st.line_chart(user_df.set_index("date")["bmi"])
-                with col3:
-                    st.markdown("**Sleep >7h**")
-                    st.line_chart(user_df.set_index("date")["slept_7h"])
-                st.markdown("**Water Intake**")
-                st.line_chart(user_df.set_index("date")[["drank_water", "water_needed"]].rename(columns={"drank_water": "Drank Water (Yes=1)", "water_needed": "Water Needed (L)"}))
-                st.markdown("**Workout & Diet**")
-                st.line_chart(user_df.set_index("date")[["workout_done", "diet_done"]].rename(columns={"workout_done": "Workout Done", "diet_done": "Diet Followed"}))
-            else:
-                st.info(f"No data for {user}.")
+        # Only one line chart for weight
+        st.subheader("Weight Progress (kg)")
+        weight_df = df.pivot_table(index="date", columns="user", values="weight")
+        st.line_chart(weight_df, use_container_width=True)
     else:
         st.info("No data available. Please add daily input.")
 
@@ -137,60 +123,69 @@ CREATE TABLE IF NOT EXISTS meal_plan (
 """)
 conn.commit()
 
-# Default meal plan as a list of tuples for easy DB insertion
 default_meal_plan_rows = [
-    ("Monday", "Warm water + soaked almonds/walnuts", "2 eggs + 1 toast + sautéed spinach", "Apple + green tea", "Brown rice + grilled chicken + veg curry + salad", "Buttermilk + roasted chana", "2 rotis + chicken curry + sautéed veg"),
-    ("Tuesday", "Warm water + soaked almonds/walnuts", "Idli (2) + sambar", "Sprouts + guava", "Brown rice + paneer + veg + salad (veg day)", "Boiled egg + tea", "2 rotis + paneer curry + salad (veg day)"),
-    ("Wednesday", "Warm water + soaked almonds/walnuts", "Vegetable oats + almonds", "Green tea + 2 khakras", "Brown rice + chicken + steamed veg + curd", "1 fruit or nuts", "Brown rice + fish curry + steamed veg"),
-    ("Thursday", "Warm water + soaked almonds/walnuts", "2 eggs + 1 toast + sautéed spinach", "1 fruit + green tea", "Brown rice + fish curry + veg + salad", "Green tea + 2 khakras", "Millet roti + tofu curry + salad"),
-    ("Friday", "Warm water + soaked almonds/walnuts", "Smoothie (spinach, banana, chia)", "Sprouts or nuts", "Millet + egg curry + salad", "Chana or 1 egg", "2 rotis + egg bhurji + veg"),
-    ("Saturday", "Warm water + soaked almonds/walnuts", "Idli (2) + sambar", "1 boiled egg", "Brown rice + paneer curry + veg (veg day)", "Buttermilk + almonds", "Roti + dal + bhindi (veg day)"),
-    ("Sunday", "Warm water + soaked almonds/walnuts", "2 eggs + 1 toast + sautéed spinach", "Chana or almonds", "Brown rice + grilled chicken + veg + soup", "Sprouts or salad", "Brown rice + grilled chicken + soup"),
+    ("Monday", "Warm water + soaked almonds/walnuts",
+     "[Masala Omelette (2 eggs)](https://www.indianhealthyrecipes.com/masala-omelette-recipe/) + 1 Multigrain Toast + 1 Fruit (like apple or banana)",
+     "Apple + green tea",
+     "[Grilled Chicken Breast+Rice+Salad](https://www.indianhealthyrecipes.com/grilled-chicken/)",
+     "Buttermilk + roasted chana",
+     "[Grilled Chicken Breast+Rice+Salad](https://www.indianhealthyrecipes.com/grilled-chicken/)"),
+    ("Tuesday", "Warm water + soaked almonds/walnuts",
+     "[Idli (2) + sambar](https://www.indianhealthyrecipes.com/idli-sambar-recipe/)",
+     "Sprouts + guava",
+     "[Brown rice + paneer + veg + salad (veg day)](https://www.indianhealthyrecipes.com/paneer-curry/)",
+     "Boiled egg + tea",
+     "[Brown rice + paneer + veg + salad (veg day)](https://www.indianhealthyrecipes.com/paneer-curry/)"),
+    ("Wednesday", "Warm water + soaked almonds/walnuts",
+     "[Masala Omelette (2 eggs)](https://www.indianhealthyrecipes.com/masala-omelette-recipe/) + 1 Multigrain Toast + 1 Fruit (like apple or banana)",
+     "Green tea + 2 khakras",
+     "[Chicken Tikka (Tandoori-style, boneless)+Rice+Salad](https://www.indianhealthyrecipes.com/chicken-tikka-recipe/)",
+     "1 fruit or nuts",
+     "[Chicken Tikka (Tandoori-style, boneless)+Rice+Salad](https://www.indianhealthyrecipes.com/chicken-tikka-recipe/)"),
+    ("Thursday", "Warm water + soaked almonds/walnuts",
+     "[Masala Omelette (2 eggs)](https://www.indianhealthyrecipes.com/masala-omelette-recipe/) + 1 Multigrain Toast + 1 Fruit (like apple or banana)",
+     "1 fruit + green tea",
+     "[Chicken Curry (light oil, tomato-based)+Rice+Salad](https://www.indianhealthyrecipes.com/chicken-curry/)",
+     "Green tea + 1 Egg",
+     "[Chicken Curry (light oil, tomato-based)+Rice+Salad](https://www.indianhealthyrecipes.com/chicken-curry/)"),
+    ("Friday", "Warm water + soaked almonds/walnuts",
+     "[Masala Omelette (2 eggs)](https://www.indianhealthyrecipes.com/masala-omelette-recipe/) + 1 Multigrain Toast + 1 Fruit (like apple or banana)",
+     "Sprouts or nuts",
+     "[Chicken Kheema (minced chicken with peas)+Rice+Salad](https://www.indianhealthyrecipes.com/chicken-keema-recipe/)",
+     "Chana or 1 egg",
+     "[Chicken Kheema (minced chicken with peas)+Rice+Salad](https://www.indianhealthyrecipes.com/chicken-keema-recipe/)"),
+    ("Saturday", "Warm water + soaked almonds/walnuts",
+     "[Idli (2) + sambar](https://www.indianhealthyrecipes.com/idli-sambar-recipe/)",
+     "1 boiled egg",
+     "[Brown rice + paneer curry + veg (veg day)](https://www.indianhealthyrecipes.com/paneer-curry/)",
+     "Buttermilk + almonds",
+     "[Brown rice + paneer curry + veg (veg day)](https://www.indianhealthyrecipes.com/paneer-curry/)"),
+    ("Sunday", "Warm water + soaked almonds/walnuts",
+     "[Masala Omelette (2 eggs)](https://www.indianhealthyrecipes.com/masala-omelette-recipe/) + 1 Multigrain Toast + 1 Fruit (like apple or banana)",
+     "Chana or almonds",
+     "[Chicken Biryani (homemade, controlled oil)+Rice+Salad](https://www.indianhealthyrecipes.com/chicken-biryani-recipe/)",
+     "Sprouts or salad",
+     "[Chicken Biryani (homemade, controlled oil)+Rice+Salad](https://www.indianhealthyrecipes.com/chicken-biryani-recipe/)")
 ]
 
-# Insert default meal plan if table is empty
-c.execute("SELECT COUNT(*) FROM meal_plan")
-if c.fetchone()[0] == 0:
-    c.executemany("""
-        INSERT INTO meal_plan (day, wakeup_drink, breakfast, mid_morning_snack, lunch, snack, dinner)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, default_meal_plan_rows)
-    conn.commit()
+# Insert default meal plan if table is empty or force reset
+c.execute("DELETE FROM meal_plan")
+c.executemany("""
+    INSERT INTO meal_plan (day, wakeup_drink, breakfast, mid_morning_snack, lunch, snack, dinner)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+""", default_meal_plan_rows)
+conn.commit()
 
 if page == "Nutrition":
     st.title("Nutrition Plan")
-    st.info("Edit your weekly meal plan below. Changes are saved to the database.")
+    st.info("test is your weekly meal plan. Click on meal names for recipes!")
 
-    # Fetch meal plan from DB
     df_meal = pd.read_sql("SELECT * FROM meal_plan ORDER BY "
                           "CASE day "
                           "WHEN 'Monday' THEN 1 WHEN 'Tuesday' THEN 2 WHEN 'Wednesday' THEN 3 "
                           "WHEN 'Thursday' THEN 4 WHEN 'Friday' THEN 5 WHEN 'Saturday' THEN 6 WHEN 'Sunday' THEN 7 END", conn)
 
-    edited_df = st.data_editor(
-        df_meal,
-        num_rows="fixed",
-        use_container_width=True,
-        key="meal_plan_editor"
-    )
-
-    if st.button("Save Changes"):
-        for idx, row in edited_df.iterrows():
-            c.execute("""
-                UPDATE meal_plan SET
-                    wakeup_drink = ?,
-                    breakfast = ?,
-                    mid_morning_snack = ?,
-                    lunch = ?,
-                    snack = ?,
-                    dinner = ?
-                WHERE day = ?
-            """, (
-                row["wakeup_drink"], row["breakfast"], row["mid_morning_snack"],
-                row["lunch"], row["snack"], row["dinner"], row["day"]
-            ))
-        conn.commit()
-        st.success("Meal plan updated!")
+    st.markdown(df_meal.to_markdown(index=False), unsafe_allow_html=True)
 
 # ...existing code...
 elif page == "Grocery List":
