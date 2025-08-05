@@ -75,17 +75,14 @@ if page == "Home":
                     st.markdown(f"### {user}")
                     st.info("No data.")
 
-       # ...existing code...
-        # --- Weight Line Chart with Forward Fill and First Weight ---
+              # --- Separate Weight Line Charts for Omkar and Prutha ---
         st.subheader("Weight Progress (kg)")
 
-        # Create a date range from the earliest entry to today
         min_date = df["date"].min()
         today = pd.to_datetime(datetime.date.today())
         all_dates = pd.date_range(start=min_date, end=today, freq="D")
         date_strs = [d.strftime("%Y-%m-%d") for d in all_dates]
-
-        weight_chart_df = pd.DataFrame(index=date_strs)
+        col1,col2=st.columns((1,1))
 
         for user in users.keys():
             user_df = (
@@ -101,11 +98,13 @@ if page == "Home":
             user_df = user_df.sort_index()
             # Reindex to all dates and forward fill
             user_df = user_df.reindex(date_strs, method='ffill')
-            # If still NaN (no data at all), fill with first_weight
             user_df["weight"].fillna(first_weights[user], inplace=True)
-            weight_chart_df[user] = user_df["weight"]
-
-        st.line_chart(weight_chart_df, use_container_width=True)
+            chart_df = pd.DataFrame({user: user_df["weight"]}, index=date_strs)
+            with (col1 if user == "Omkar" else col2):
+                st.subheader(f"{user}'s Weight Chart")
+                st.line_chart(chart_df, use_container_width=True, height=250)
+                st.caption(f"{user}'s Weight Progress")
+            
 # ...existing code...
 
 elif page == "Daily Input":
