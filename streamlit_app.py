@@ -3,8 +3,9 @@ import pandas as pd
 import numpy as np
 import datetime
 import sqlite3
+import plotly.express as px
  
-
+st.set_page_config(layout="wide")
 # Hardcoded user data
 users = {
     "Omkar": {"height_cm": 177.8, "age": 37},   # 5'10" = 177.8 cm
@@ -82,8 +83,7 @@ if page == "Home":
         today = pd.to_datetime(datetime.date.today())
         all_dates = pd.date_range(start=min_date, end=today, freq="D")
         date_strs = [d.strftime("%Y-%m-%d") for d in all_dates]
-        col1,col2=st.columns((1,1))
-
+        col1,col2= st.columns(2)
         for user in users.keys():
             user_df = (
                 df[df["user"] == user][["date", "weight"]]
@@ -99,11 +99,32 @@ if page == "Home":
             # Reindex to all dates and forward fill
             user_df = user_df.reindex(date_strs, method='ffill')
             user_df["weight"].fillna(first_weights[user], inplace=True)
-            chart_df = pd.DataFrame({user: user_df["weight"]}, index=date_strs)
-            with (col1 if user == "Omkar" else col2):
+            chart_df = pd.DataFrame({
+                "Date": date_strs,
+                "Weight": user_df["weight"].values
+            })
+            with col1 if user == "Omkar" else col2:
                 st.subheader(f"{user}'s Weight Chart")
-                st.line_chart(chart_df, use_container_width=True, height=250)
-                st.caption(f"{user}'s Weight Progress")
+                st.write("Click on the chart to zoom in.")  
+                fig = px.line(
+                    chart_df,
+                    x="Date",
+                    y="Weight",
+                    markers=True,
+                    title=f"{user}'s Weight Progress"
+                )
+                fig.update_traces(
+                    text=[f"{w:.1f}" for w in chart_df["Weight"]],
+                    textposition="top right",
+                    mode="lines+markers+text"
+                )
+                fig.update_layout(
+                    xaxis_title="Date",
+                    yaxis_title="Weight (kg)",
+                    showlegend=False,
+                    height=350
+                )
+                st.plotly_chart(fig, use_container_width=True)
             
 # ...existing code...
 
