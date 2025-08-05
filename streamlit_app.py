@@ -81,7 +81,15 @@ if page == "Home":
                     st.write(f"**Weight Loss Progress:** {weight_loss_percent:.2f}%")
                     
                     st.metric("Prutha's BMI", f"{prutha_bmi:.2f}", delta=f"{prutha_bmi - target_bmi:.2f} BMI Remaining BMI Reduction")
-                    
+            workout_done = df_prutha["workout_done"].iloc[-1] if not df_prutha.empty else 0
+            diet_done = df_prutha["diet_done"].iloc[-1] if not df_prutha.empty else 0
+            slept_7h = df_prutha["slept_7h"].iloc[-1] if not df_prutha.empty else 0
+            drank_water = df_prutha["drank_water"].iloc[-1] if not df_prutha.empty else 0
+            st.write(f"workouts done till date: {workout_done}/{days_passed}")          
+            st.write(f"Slept for 7 hours: {slept_7h}/{days_passed}")          
+            st.write(f"drank water: {drank_water}/{days_passed}")          
+            st.write(f"Diet followed: {diet_done}/{days_passed}")
+            
 
                     
         with col2:
@@ -98,6 +106,14 @@ if page == "Home":
                 st.write(f"**Weight Loss Progress:** {weight_loss_percent:.2f}%")
                 
                 st.metric("Omkar's BMI", f"{omkar_bmi:.2f}", delta=f"{omkar_bmi - target_bmi:.2f} BMI Remaining BMI Reduction")
+                diet_done = df_omkar["diet_done"].iloc[-1] if not df_omkar.empty else 0
+                slept_7h = df_omkar["slept_7h"].iloc[-1] if not df_omkar.empty else 0
+                drank_water = df_omkar["drank_water"].iloc[-1] if not df_omkar.empty else 0
+                
+                st.write(f"workouts done till date: {workout_done}/{days_passed}")          
+                st.write(f"Slept for 7 hours: {slept_7h}/{days_passed}")          
+                st.write(f"drank water: {drank_water}/{days_passed}")          
+                st.write(f"Diet followed: {diet_done}/{days_passed}")
         # Aggregate to ensure one weight per user per date (take last entry if duplicates)
         df_plot = (
             df.sort_values("date")
